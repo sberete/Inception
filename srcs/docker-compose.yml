@@ -1,0 +1,106 @@
+services:
+  mariadb:
+    image: mariadb
+    build: ./requirements/mariadb
+    container_name: mariadb
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - inception
+
+  wordpress:
+    image: wordpress
+    build: ./requirements/wordpress
+    container_name: wordpress
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - mariadb
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - inception
+
+  nginx:
+    image: nginx
+    build: ./requirements/nginx
+    container_name: nginx
+    restart: always
+    ports:
+      - "443:443"
+    depends_on:
+      - wordpress
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - inception
+
+  redis:
+    image: redis
+    build: ./requirements/bonus/redis
+    container_name: redis
+    restart: always
+    networks:
+      - inception
+
+  adminer:
+    image: adminer
+    build: ./requirements/bonus/adminer
+    container_name: adminer
+    restart: always
+    networks:
+      - inception
+    depends_on:
+      - mariadb
+
+  ftp:
+    image: ftp
+    build: ./requirements/bonus/ftp
+    container_name: ftp
+    restart: always
+    ports:
+      - "21:21"
+    volumes:
+      - wordpress_data:/home/ftpuser/wordpress
+    networks:
+      - inception
+
+  static-site:
+    image: static-site
+    build: ./requirements/bonus/static-site
+    container_name: static-site
+    restart: always
+    networks:
+      - inception
+  
+  uptime-kuma:
+    image: uptime-kuma
+    build: ./requirements/bonus/uptime-kuma
+    container_name: uptime-kuma
+    restart: always
+    networks:
+      - inception
+
+networks:
+  inception:
+    driver: bridge
+
+volumes:
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/sberete/data/wordpress
+
+  mariadb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/sberete/data/mariadb
+
